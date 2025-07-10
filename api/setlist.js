@@ -7,7 +7,7 @@ export default async function handler(req, res) {
 
   const response = await fetch(`https://api.setlist.fm/rest/1.0/search/setlists?artistName=${artistName}`, {
     headers: {
-      'x-api-key': 'SUA_API_KEY_AQUI',
+      'x-api-key': 'eGnluHZncPgZwsJfhCvM6R-jotJuit9hAXNR',
       'Accept': 'application/json',
     },
   });
