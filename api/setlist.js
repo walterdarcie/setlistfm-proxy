@@ -1,6 +1,5 @@
 export default async function handler(req, res) {
   try {
-    // Habilitar CORS
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -15,7 +14,7 @@ export default async function handler(req, res) {
     const headers = {
       'x-api-key': process.env.SETLISTFM_API_KEY,
       'Accept': 'application/json',
-      'User-Agent': 'It’s Alive (walter.darcie@yahoo.com.br)'
+      'User-Agent': "It's Alive (walter.darcie@yahoo.com.br)" // ✅ corrigido aqui
     };
 
     let finalResult = null;
@@ -25,7 +24,6 @@ export default async function handler(req, res) {
       
       const response = await fetch(url, { headers });
 
-      // Tenta ignorar erros de resposta, mas mostra no log
       if (!response.ok) {
         console.warn(`Erro ao buscar com o campo ${field}: ${response.status}`);
         continue;
