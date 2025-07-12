@@ -1,43 +1,30 @@
 export default async function handler(req, res) {
-  // Habilitar CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-  // Responder OPTIONS (pré-flight do CORS)
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
+  if (req.method === 'OPTIONS') return res.status(200).end();
 
-  const { artistName = '', p = '0' } = req.query;
+  const { searchTerm = '', page = 1 } = req.query;
+  if (!searchTerm) return res.status(400).json({ error: 'Missing searchTerm' });
 
-  if (!artistName) {
-    return res.status(400).json({ error: 'Missing artistName query parameter' });
-  }
+  const fields = ['artistName', 'cityName', 'venueName', 'tourName', 'year'];
 
-  // Corrigir a página: somar +1 porque a API começa do 1, mas o FlutterFlow do 0
-  const clientPage = parseInt(p, 10);
-  const apiPage = isNaN(clientPage) ? 1 : clientPage + 1;
+  const headers = {
+    'x-api-key': process.env.SETLISTFM_API_KEY,
+    'Accept': 'application/json',
+    'User-Agent': 'It’s Alive (walter.darcie@yahoo.com.br)'
+  };
 
-  try {
-    const response = await fetch(
-      `https://api.setlist.fm/rest/1.0/search/setlists?artistName=${encodeURIComponent(artistName)}&p=${apiPage}`,
-      {
-        headers: {
-          'x-api-key': process.env.SETLISTFM_API_KEY,
-          'Accept': 'application/json',
-          'User-Agent': "It's Alive (walter.darcie@yahoo.com.br)", // <- Adicionado aqui
-        },
-      }
-    );
+  let finalResult = null;
 
-    if (!response.ok) {
-      return res.status(response.status).json({ error: 'Failed to fetch data from Setlist.fm' });
-    }
+  for (const field of fields) {
+    const url = `https://api.setlist.fm/rest/1.0/search/setlists?${field}=${encodeURIComponent(searchTerm)}&p=${parseInt(page) + 1}`;
+    
+    const response = await fetch(url, { headers });
+    if (!response.ok) continue;
 
     const data = await response.json();
-
-    // Forçar o campo "setlist" a ser sempre uma lista
     let fixedSetlist = [];
 
     if (Array.isArray(data.setlist)) {
@@ -46,15 +33,21 @@ export default async function handler(req, res) {
       fixedSetlist = [data.setlist];
     }
 
-    res.status(200).json({
-      setlist: fixedSetlist,
-      page: apiPage,
-      total: data.total ?? 0,
-      itemsPerPage: data.itemsPerPage ?? fixedSetlist.length,
-    });
-
-  } catch (error) {
-    console.error('API error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    if (fixedSetlist.length > 0) {
+      finalResult = {
+        setlist: fixedSetlist,
+        page: data.page ?? 1,
+        total: data.total ?? 0,
+        itemsPerPage: data.itemsPerPage ?? fixedSetlist.length,
+        fieldMatched: field
+      };
+      break;
+    }
   }
+
+  if (!finalResult) {
+    return res.status(404).json({ setlist: [], message: 'No results found' });
+  }
+
+  res.status(200).json(finalResult);
 }
