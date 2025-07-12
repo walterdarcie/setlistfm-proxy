@@ -9,19 +9,23 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
-  const { artistName = '', page = 1 } = req.query;
+  const { artistName = '', p = 1 } = req.query;
 
   if (!artistName) {
     return res.status(400).json({ error: 'Missing artistName query parameter' });
   }
 
   try {
-    const response = await fetch(`https://api.setlist.fm/rest/1.0/search/setlists?artistName=${encodeURIComponent(artistName)}&p=${page}`, {
-      headers: {
-        'x-api-key': process.env.SETLISTFM_API_KEY, // 🔑 A API Key deve estar configurada nas variáveis de ambiente da Vercel
-        'Accept': 'application/json',
-      },
-    });
+    const response = await fetch(
+      `https://api.setlist.fm/rest/1.0/search/setlists?artistName=${encodeURIComponent(artistName)}&p=${p}`,
+      {
+        headers: {
+          'x-api-key': process.env.SETLISTFM_API_KEY,
+          'Accept': 'application/json',
+          'User-Agent': 'ItsAlive/1.0 (walter.darcie@yahoo.com.br)', // <-- personalize com seu e-mail
+        },
+      }
+    );
 
     if (!response.ok) {
       return res.status(response.status).json({ error: 'Failed to fetch data from Setlist.fm' });
@@ -36,13 +40,11 @@ export default async function handler(req, res) {
       fixedSetlist = data.setlist;
     } else if (data.setlist) {
       fixedSetlist = [data.setlist];
-    } else {
-      fixedSetlist = [];
     }
 
     res.status(200).json({
       setlist: fixedSetlist,
-      page: data.page ?? 1,
+      page: data.page ?? parseInt(p),
       total: data.total ?? 0,
       itemsPerPage: data.itemsPerPage ?? fixedSetlist.length,
     });
