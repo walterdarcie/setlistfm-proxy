@@ -7,9 +7,9 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
-  const { searchTerm = '', p = 0 } = req.query;
+  const { searchTerm = '', p = '0' } = req.query;
 
-  let incomingPage = parseInt(p);
+  let incomingPage = parseInt(p, 10);
   if (isNaN(incomingPage) || incomingPage < 0) {
     incomingPage = 0;
   }
