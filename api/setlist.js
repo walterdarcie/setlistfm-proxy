@@ -16,12 +16,32 @@ export default async function handler(req, res) {
 
   const realPage = incomingPage + 1;
 
-  // ⚠️ Sempre usa searchTerm como artistName
   if (!searchTerm || typeof searchTerm !== 'string') {
     return res.status(400).json({ error: 'Missing or invalid searchTerm' });
   }
 
-  const url = `https://api.setlist.fm/rest/1.0/search/setlists?p=${realPage}&artistName=${encodeURIComponent(searchTerm)}`;
+  // 🔎 Parse inteligente do searchTerm
+  const words = searchTerm.trim().split(/\s+/);
+  let artistName = '';
+  let cityName = '';
+  let year = '';
+
+  for (const word of words) {
+    if (/^\d{4}$/.test(word)) {
+      year = word;
+    } else if (!artistName) {
+      artistName += word;
+    } else {
+      cityName += cityName ? ` ${word}` : word;
+    }
+  }
+
+  let queryParams = `p=${realPage}`;
+  if (artistName) queryParams += `&artistName=${encodeURIComponent(artistName)}`;
+  if (cityName) queryParams += `&cityName=${encodeURIComponent(cityName)}`;
+  if (year) queryParams += `&year=${year}`;
+
+  const url = `https://api.setlist.fm/rest/1.0/search/setlists?${queryParams}`;
   console.log('➡️ Requesting Setlist.fm URL:', url);
 
   try {
