@@ -1,37 +1,27 @@
 export default async function handler(req, res) {
-  // Habilita CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-  // Resposta rápida para preflight
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
 
-  // Parâmetros da query
-  const { searchTerm = '', artistName = '', p = 0 } = req.query;
+  const { searchTerm = '', p = 0 } = req.query;
 
-  // Corrige e garante número da página
   let incomingPage = parseInt(p);
   if (isNaN(incomingPage) || incomingPage < 0) {
     incomingPage = 0;
   }
 
-  // A API do Setlist.fm começa da página 1
   const realPage = incomingPage + 1;
 
-  // Monta a query de busca
-  let queryParam = '';
-  if (searchTerm) {
-    queryParam = `&searchName=${encodeURIComponent(searchTerm)}`;
-  } else if (artistName) {
-    queryParam = `&artistName=${encodeURIComponent(artistName)}`;
-  } else {
-    return res.status(400).json({ error: 'Missing searchTerm or artistName parameter' });
+  // ⚠️ Sempre usa searchTerm como artistName
+  if (!searchTerm || typeof searchTerm !== 'string') {
+    return res.status(400).json({ error: 'Missing or invalid searchTerm' });
   }
 
-  const url = `https://api.setlist.fm/rest/1.0/search/setlists?p=${realPage}${queryParam}`;
+  const url = `https://api.setlist.fm/rest/1.0/search/setlists?p=${realPage}&artistName=${encodeURIComponent(searchTerm)}`;
   console.log('➡️ Requesting Setlist.fm URL:', url);
 
   try {
@@ -53,7 +43,6 @@ export default async function handler(req, res) {
 
     const data = await response.json();
 
-    // Força 'setlist' a ser uma lista
     let fixedSetlist = [];
     if (Array.isArray(data.setlist)) {
       fixedSetlist = data.setlist;
